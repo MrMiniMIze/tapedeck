@@ -22,7 +22,8 @@ option(EIB_FUZZ     "Build libFuzzer targets for the parser (clang only)" OFF)
 # ---------------------------------------------------------------------------
 add_library(eib_core STATIC
   src/order_book.cpp
-  src/itch_parser.cpp)
+  src/itch_parser.cpp
+  src/match_engine.cpp)
 target_include_directories(eib_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(eib_core PUBLIC cxx_std_20)
 

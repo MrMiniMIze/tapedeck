@@ -73,7 +73,7 @@ Needs **CMake 3.20 or newer** and a **C++20** compiler (GCC 11+, Clang 14+, or M
 
 * [x] **Phase 0**: scaffold (CMake, CI on Linux and Windows, Catch2, sanitizers, platform clock and affinity, honesty docs)
 * [x] **Phase 1**: flat-array `BookBuilder` (differential-tested vs a reference book), ITCH 5.0 `FeedParser`, `eib_replay`, a libFuzzer parser target, deterministic `state_hash`, and a CI-enforced zero-allocation steady state
-* [ ] **Phase 2**: `MatchEngine` plus event-driven backtester plus the lookahead oracle test
+* [~] **Phase 2**: `MatchEngine` with a queue-position fill model (Conservative and Optimistic, the basis for the Phase 3 kill curve) done and tested; the event-driven backtester and the lookahead oracle test are next
 * [ ] **Phase 3**: OFI/microprice signal plus the honest-evaluation machine (deflated Sharpe, kill curves)
 * [ ] **Phase 4**: honest latency on bare-metal Linux, or a throughput plus determinism reframe
 
