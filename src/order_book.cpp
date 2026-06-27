@@ -90,8 +90,7 @@ bool OrderBook::apply(const MarketEvent& ev) {
     case EventType::Cancel: {
       auto* e = orders_.find(ev.id);
       if (!e) return false;
-      std::size_t idx;
-      in_window(e->price, idx);  // a resting order is always inside the window
+      const std::size_t idx = index_of(e->price);  // resting order: always in window
       remove_level_qty(e->side, idx, e->qty);
       orders_.erase(ev.id);
       return true;
@@ -102,8 +101,7 @@ bool OrderBook::apply(const MarketEvent& ev) {
       auto* e = orders_.find(ev.id);
       if (!e) return false;
       if (ev.qty > e->qty) return false;
-      std::size_t idx;
-      in_window(e->price, idx);
+      const std::size_t idx = index_of(e->price);
       remove_level_qty(e->side, idx, ev.qty);
       e->qty -= ev.qty;
       if (e->qty == 0) orders_.erase(ev.id);
@@ -116,9 +114,8 @@ bool OrderBook::apply(const MarketEvent& ev) {
       if (orders_.find(ev.new_id)) return false;  // new id already live
       const Side side = e->side;
       const Qty old_qty = e->qty;
-      std::size_t old_idx;
-      in_window(e->price, old_idx);
-      std::size_t new_idx;
+      const std::size_t old_idx = index_of(e->price);
+      std::size_t new_idx = 0;
       if (!in_window(ev.price, new_idx)) return false;  // reject before mutating
       remove_level_qty(side, old_idx, old_qty);
       orders_.erase(ev.id);
