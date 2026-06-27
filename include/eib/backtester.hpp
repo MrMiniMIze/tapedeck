@@ -31,8 +31,9 @@ class Backtester {
  public:
   explicit Backtester(std::size_t level_capacity = 1u << 16,
                       std::size_t order_capacity = 1u << 16,
-                      FillModel model = FillModel::Conservative)
-      : book_(level_capacity, order_capacity), matcher_(model) {}
+                      FillModel model = FillModel::Conservative,
+                      Ticks center = 0)
+      : book_(level_capacity, order_capacity, center), matcher_(model) {}
 
   const OrderBook& book() const { return book_; }
   const Portfolio& portfolio() const { return port_; }

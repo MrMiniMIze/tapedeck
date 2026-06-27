@@ -122,8 +122,12 @@ class IdIndex {
 // the window to the instrument's plausible band (the replay tool does this).
 class OrderBook {
  public:
+  // center is the tick price the window is centered on; 0 means anchor lazily on
+  // the first order (fine for tests, fragile on real pre-market data, so the
+  // research driver passes the median price instead).
   explicit OrderBook(std::size_t level_capacity = 1u << 16,
-                     std::size_t order_capacity = 1u << 16);
+                     std::size_t order_capacity = 1u << 16,
+                     Ticks center = 0);
 
   bool apply(const MarketEvent& ev);
 

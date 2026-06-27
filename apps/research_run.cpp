@@ -8,6 +8,7 @@
 // The strategy rests a passive order at the touch in the signal direction and is
 // filled by the MatchEngine per the fill model, so the returns genuinely differ
 // across Conservative and Optimistic. That difference is the kill curve.
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -132,10 +133,32 @@ int main(int argc, char** argv) {
     return 2;
   }
 
+  // Center the price window on the median add price and drop far stubs, so the
+  // window sits at the real market rather than a stray pre-market order.
+  Ticks center = 0;
+  {
+    std::vector<Ticks> px;
+    for (const auto& e : stream)
+      if (e.type == EventType::Add) px.push_back(e.price);
+    if (!px.empty()) {
+      std::nth_element(px.begin(), px.begin() + static_cast<std::ptrdiff_t>(px.size() / 2),
+                       px.end());
+      center = px[px.size() / 2];
+      const Ticks band = 120000;  // keep adds within $12 of the median
+      std::vector<MarketEvent> filt;
+      filt.reserve(stream.size());
+      for (const auto& e : stream)
+        if (!(e.type == EventType::Add &&
+              (e.price < center - band || e.price > center + band)))
+          filt.push_back(e);
+      stream.swap(filt);
+    }
+  }
+
   const int horizons[] = {1, 5, 20, 100};
   std::vector<std::vector<std::int64_t>> equities;
   for (const int h : horizons) {
-    Backtester bt(1u << 16, 1u << 16, FillModel::Conservative);
+    Backtester bt(1u << 18, 1u << 19, FillModel::Conservative, center);
     AggressiveSignal strat;
     strat.horizon = h;
     bt.run(stream, strat);

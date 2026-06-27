@@ -4,11 +4,17 @@
 
 namespace eib {
 
-OrderBook::OrderBook(std::size_t level_capacity, std::size_t order_capacity)
+OrderBook::OrderBook(std::size_t level_capacity, std::size_t order_capacity,
+                     Ticks center)
     : cap_(level_capacity),
       bid_qty_(level_capacity, 0),
       ask_qty_(level_capacity, 0),
-      orders_(order_capacity) {}
+      orders_(order_capacity) {
+  if (center != 0) {
+    base_ = center - static_cast<Ticks>(cap_ / 2);
+    based_ = true;
+  }
+}
 
 bool OrderBook::in_window(Ticks price, std::size_t& idx) const {
   if (!based_ || price < base_) return false;
