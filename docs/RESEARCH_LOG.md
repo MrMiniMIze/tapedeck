@@ -11,6 +11,10 @@
 | 2 | 2026-06-27 | Aggressive microprice, AAPL, hold 5 samples | -0.1191 | no |
 | 3 | 2026-06-27 | Aggressive microprice, AAPL, hold 20 samples | -0.0537 | no |
 | 4 | 2026-06-27 | Aggressive microprice, AAPL, hold 100 samples | 0.0000 | no |
+| 5 | 2026-06-27 | Generalization: same strategy on MSFT, hold 1 | -0.1764 | no |
+| 6 | 2026-06-27 | Generalization: same strategy on MSFT, hold 5 | -0.0344 | no |
+| 7 | 2026-06-27 | Generalization: same strategy on MSFT, hold 20 | -0.0093 | no |
+| 8 | 2026-06-27 | Generalization: same strategy on MSFT, hold 100 | 0.0002 | no |
 
 ## First real run (the null)
 
@@ -23,10 +27,12 @@ falls. The best horizon (100) has a deflated-Sharpe probability of ~0.00, a
 bootstrap 95% CI of [-0.029, +0.028] straddling zero, and a null p-value of 0.51.
 
 **Conclusion: no edge net of the spread.** This is the honest null. The microprice
-predicts the next move, but not by enough to cross the spread. Caveats: one symbol,
-one day, one slice, an aggressive-take strategy, and only four horizon trials. A
-genuine study would add symbols, days, and the passive (queue-position) variant,
-and report the deflated Sharpe over the full committed trial count.
+predicts the next move, but not by enough to cross the spread. The same null holds
+on MSFT with no retuning (h1 -0.18 down to h100 ~0), so it is not an AAPL artifact.
+Caveats: two symbols, one day, one slice, an aggressive-take strategy, and only
+four horizon trials. A genuine study would add more days, the passive
+(queue-position) variant, and report the deflated Sharpe over the full committed
+trial count.
 
 ## Deflated Sharpe inputs (fill at Phase 3)
 
