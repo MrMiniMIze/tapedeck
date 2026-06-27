@@ -41,6 +41,7 @@ class MatchEngine {
 
   bool empty() const { return live_.empty(); }
   std::size_t live_count() const { return live_.size(); }
+  bool is_live(OrderId id) const { return live_.find(id) != live_.end(); }
 
   // Post one of our resting limit orders at (side, price) for qty. queue_ahead
   // is the venue qty already resting at that level when we join, i.e. our place

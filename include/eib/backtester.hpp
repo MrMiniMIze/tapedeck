@@ -71,6 +71,7 @@ class Backtester {
     return matcher_.post(id, side, price, qty, book_.qty_at(side, price), 0);
   }
   bool cancel_passive(OrderId id) { return matcher_.cancel(id); }
+  bool passive_live(OrderId id) const { return matcher_.is_live(id); }
 
   // Mark-to-market equity in 2 * (ticks * shares) units.
   std::int64_t equity2() const {

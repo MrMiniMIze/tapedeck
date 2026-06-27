@@ -49,6 +49,7 @@ Needs **CMake 3.20 or newer** and a **C++20** compiler (GCC 11+, Clang 14+, or M
 | `test [preset]` | build then `ctest`. `test asan` runs ASan and UBSan (Linux, WSL2, macOS) |
 | `replay <file>` | build then run the ITCH 5.0 replay tool on a real data file (see `docs/DATA.md`) |
 | `fuzz [secs]` | build and run the ITCH parser fuzzer (clang plus libFuzzer, Linux); bash only |
+| `research [file]` | build the research driver, run the signal per fill model, print the kill curve (no file: synthetic plumbing run) |
 | `selfcheck` | OS and arch, VM/Docker/WSL detection, tool versions, and the **latency-validity verdict** |
 | `bench` | Phase 4 latency benchmark (stub today); environment gated so it will not emit numbers off bare metal |
 | `clean` | remove `build/` |
@@ -74,7 +75,7 @@ Needs **CMake 3.20 or newer** and a **C++20** compiler (GCC 11+, Clang 14+, or M
 * [x] **Phase 0**: scaffold (CMake, CI on Linux and Windows, Catch2, sanitizers, platform clock and affinity, honesty docs)
 * [x] **Phase 1**: flat-array `BookBuilder` (differential-tested vs a reference book), ITCH 5.0 `FeedParser`, `eib_replay`, a libFuzzer parser target, deterministic `state_hash`, and a CI-enforced zero-allocation steady state
 * [x] **Phase 2**: `MatchEngine` (queue-position fills, Conservative and Optimistic), the event-driven backtester (book plus matcher on one timestamp-ordered stream, no lookahead by construction), and the lookahead oracle test (foresight prints money, the honest path does not)
-* [~] **Phase 3**: OFI and microprice signals (integer-only, `include/eib/signal.hpp`) and the honest-evaluation machine (deflated Sharpe, stationary-bootstrap CI, null/shuffle test, walk-forward, kill curves) are built and self-tested in `research/`; the remaining step is running the end-to-end kill curves on real ITCH data (needs data on a tuned host)
+* [~] **Phase 3**: OFI and microprice signals (integer-only), the honest-evaluation machine (deflated Sharpe, bootstrap CI, null test, kill curves, self-tested in `research/`), and the end-to-end driver (`eib_research` plus `scripts/research`: signal per fill model, returns CSV, kill curve report) are all built and verified on synthetic data; the only remaining step is one command on a real ITCH sample
 * [ ] **Phase 4**: honest latency on bare-metal Linux, or a throughput plus determinism reframe
 
 ## Layout
