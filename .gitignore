@@ -1,0 +1,28 @@
+# Build output
+/build/
+build/
+out/
+cmake-build-*/
+
+# Tooling
+compile_commands.json
+.cache/
+.idea/
+.vscode/
+
+# Object files / artifacts
+*.o
+*.obj
+*.a
+*.lib
+*.exe
+
+# Data (do not commit raw market data, see docs/)
+/data/
+*.itch
+*.pcap
+*.dbn
+
+# OS
+.DS_Store
+Thumbs.db
