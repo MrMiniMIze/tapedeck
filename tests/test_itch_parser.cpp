@@ -33,6 +33,19 @@ std::vector<std::uint8_t> add_msg(std::uint64_t id, char bs, std::uint32_t share
   return m;                 // 36 bytes
 }
 
+std::vector<std::uint8_t> add_sym(std::uint64_t id, char bs, std::uint32_t shares,
+                                  std::uint32_t price, const char* stock) {
+  std::vector<std::uint8_t> m;
+  m.push_back(static_cast<std::uint8_t>('A'));
+  put_be(m, 0, 2); put_be(m, 0, 2); put_be(m, 0, 6);
+  put_be(m, id, 8);
+  m.push_back(static_cast<std::uint8_t>(bs));
+  put_be(m, shares, 4);
+  for (int i = 0; i < 8; ++i) m.push_back(static_cast<std::uint8_t>(stock[i]));
+  put_be(m, price, 4);
+  return m;  // 36 bytes
+}
+
 std::vector<std::uint8_t> exec_msg(std::uint64_t id, std::uint32_t shares) {
   std::vector<std::uint8_t> m;
   m.push_back(static_cast<std::uint8_t>('E'));
@@ -121,6 +134,20 @@ TEST_CASE("ITCH delete empties the level", "[itch][book]") {
   parse_itch_stream(as_span(buf),
                     [&](const MarketEvent& ev) { REQUIRE(book.apply(ev)); });
   REQUIRE_FALSE(book.has_bids());
+}
+
+TEST_CASE("parse_itch_symbol filters to a single stock", "[itch]") {
+  std::vector<std::uint8_t> buf;
+  frame(buf, add_sym(1, 'B', 100, 1000000, "AAPL    "));
+  frame(buf, add_sym(2, 'B', 50, 999000, "MSFT    "));
+  frame(buf, exec_msg(1, 30));  // AAPL order
+  frame(buf, exec_msg(2, 10));  // MSFT order
+  const char aapl[8] = {'A', 'A', 'P', 'L', ' ', ' ', ' ', ' '};
+  int seen = 0;
+  const auto n =
+      parse_itch_symbol(as_span(buf), aapl, [&](const MarketEvent&) { ++seen; });
+  REQUIRE(n == 2);  // only the AAPL add and the AAPL execute
+  REQUIRE(seen == 2);
 }
 
 TEST_CASE("ITCH stream stops cleanly at a truncated tail", "[itch]") {

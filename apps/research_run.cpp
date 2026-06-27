@@ -85,12 +85,12 @@ struct PassiveOfi {
   }
 };
 
-std::vector<MarketEvent> load_itch(const char* path) {
+std::vector<MarketEvent> load_itch(const char* path, const char symbol[8]) {
   std::ifstream in(path, std::ios::binary);
   std::vector<std::uint8_t> buf((std::istreambuf_iterator<char>(in)),
                                 std::istreambuf_iterator<char>());
   std::vector<MarketEvent> events;
-  parse_itch_stream(std::span<const std::uint8_t>(buf.data(), buf.size()),
+  parse_itch_symbol(std::span<const std::uint8_t>(buf.data(), buf.size()), symbol,
                     [&](const MarketEvent& e) { events.push_back(e); });
   return events;
 }
@@ -144,13 +144,19 @@ int main(int argc, char** argv) {
   if (argc >= 2 && std::strcmp(argv[1], "--synth") == 0) {
     stream = synth_stream(3000, 42);
   } else if (argc >= 2) {
-    stream = load_itch(argv[1]);
+    char sym[8];
+    std::memset(sym, ' ', sizeof(sym));
+    const char* s = (argc >= 3) ? argv[2] : "AAPL";
+    for (int i = 0; i < 8 && s[i] != '\0'; ++i) sym[i] = s[i];
+    stream = load_itch(argv[1], sym);
+    std::fprintf(stderr, "parsed %zu events for symbol '%.8s' from %s\n",
+                 stream.size(), sym, argv[1]);
     if (stream.empty()) {
-      std::fprintf(stderr, "no events parsed from %s\n", argv[1]);
+      std::fprintf(stderr, "no events for that symbol (check the ticker)\n");
       return 1;
     }
   } else {
-    std::fprintf(stderr, "usage: %s <itch-5.0-file> | --synth\n", argv[0]);
+    std::fprintf(stderr, "usage: %s <itch-5.0-file> [SYMBOL] | --synth\n", argv[0]);
     return 2;
   }
 

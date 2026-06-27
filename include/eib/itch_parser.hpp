@@ -1,7 +1,9 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <span>
+#include <unordered_set>
 
 #include "eib/event.hpp"
 
@@ -42,6 +44,68 @@ std::size_t parse_itch_stream(std::span<const std::uint8_t> buf, OnEvent&& on_ev
     if (decode_itch_message(buf.subspan(consumed + 2, len), ev) == ItchStatus::Event) {
       on_event(ev);
       ++count;
+    }
+    consumed += 2 + len;
+  }
+  return count;
+}
+
+namespace detail {
+inline std::uint64_t read_be(const std::uint8_t* p, int n) {
+  std::uint64_t v = 0;
+  for (int i = 0; i < n; ++i) v = (v << 8) | static_cast<std::uint64_t>(p[i]);
+  return v;
+}
+}  // namespace detail
+
+// Like parse_itch_stream, but emits only events for orders belonging to one
+// stock symbol (8 chars, space padded, e.g. "AAPL    "). Real ITCH interleaves
+// every symbol on one feed, so the BookBuilder needs a single-symbol stream.
+// Order ids for the symbol are tracked, so the id-based events (Execute, Cancel,
+// Reduce, Replace) are filtered correctly even though they carry no symbol.
+template <class OnEvent>
+std::size_t parse_itch_symbol(std::span<const std::uint8_t> buf,
+                              const char symbol[8], OnEvent&& on_event) {
+  std::unordered_set<OrderId> ours;
+  std::size_t consumed = 0;
+  std::size_t count = 0;
+  while (consumed + 2 <= buf.size()) {
+    const std::size_t len = (static_cast<std::size_t>(buf[consumed]) << 8) |
+                            static_cast<std::size_t>(buf[consumed + 1]);
+    if (len == 0) break;
+    if (consumed + 2 + len > buf.size()) break;
+    const std::uint8_t* m = buf.data() + consumed + 2;
+    const char type = static_cast<char>(m[0]);
+
+    bool keep = false;
+    if ((type == 'A' || type == 'F') && len >= 36u) {
+      if (std::memcmp(m + 24, symbol, 8) == 0) {
+        ours.insert(detail::read_be(m + 11, 8));
+        keep = true;
+      }
+    } else if ((type == 'E' || type == 'C' || type == 'X' || type == 'D') &&
+               len >= 19u) {
+      const OrderId id = detail::read_be(m + 11, 8);
+      if (ours.find(id) != ours.end()) {
+        keep = true;
+        if (type == 'D') ours.erase(id);
+      }
+    } else if (type == 'U' && len >= 35u) {
+      const OrderId old_id = detail::read_be(m + 11, 8);
+      if (ours.find(old_id) != ours.end()) {
+        ours.insert(detail::read_be(m + 19, 8));
+        ours.erase(old_id);
+        keep = true;
+      }
+    }
+
+    if (keep) {
+      MarketEvent ev;
+      if (decode_itch_message(buf.subspan(consumed + 2, len), ev) ==
+          ItchStatus::Event) {
+        on_event(ev);
+        ++count;
+      }
     }
     consumed += 2 + len;
   }
