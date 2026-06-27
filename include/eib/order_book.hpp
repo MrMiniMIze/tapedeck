@@ -42,6 +42,15 @@ class IdIndex {
     return nullptr;
   }
 
+  const Entry* find(OrderId id) const {
+    std::size_t i = home(id);
+    while (used_[i]) {
+      if (slots_[i].id == id) return &slots_[i];
+      i = (i + 1) & mask_;
+    }
+    return nullptr;
+  }
+
   // Returns the inserted entry, or nullptr if the id is already present or the
   // logical capacity is reached (caller treats nullptr as a loud failure).
   Entry* insert(OrderId id, Side side, Ticks price, Qty qty) {
@@ -126,6 +135,12 @@ class OrderBook {
   Ticks best_ask() const { return base_ + static_cast<Ticks>(best_ask_idx_); }
 
   Qty qty_at(Side side, Ticks price) const;
+
+  // Look up a resting order's side/price/remaining size by id. The backtester
+  // uses this to resolve a Cancel/Reduce/Execute event (which carries only an id)
+  // into the level info the MatchEngine needs, before the event is applied.
+  bool order_info(OrderId id, Side& side, Ticks& price, Qty& qty) const;
+
   std::size_t level_count(Side side) const {
     return side == Side::Buy ? bid_levels_ : ask_levels_;
   }

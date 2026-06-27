@@ -131,9 +131,18 @@ bool OrderBook::apply(const MarketEvent& ev) {
 }
 
 Qty OrderBook::qty_at(Side side, Ticks price) const {
-  std::size_t idx;
+  std::size_t idx = 0;
   if (!in_window(price, idx)) return 0;
   return side == Side::Buy ? bid_qty_[idx] : ask_qty_[idx];
+}
+
+bool OrderBook::order_info(OrderId id, Side& side, Ticks& price, Qty& qty) const {
+  const auto* e = orders_.find(id);
+  if (e == nullptr) return false;
+  side = e->side;
+  price = e->price;
+  qty = e->qty;
+  return true;
 }
 
 std::uint64_t OrderBook::state_hash() const {

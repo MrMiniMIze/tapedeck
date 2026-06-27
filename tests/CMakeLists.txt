@@ -12,7 +12,8 @@ add_executable(eib_tests
   test_order_book.cpp
   test_itch_parser.cpp
   test_book_differential.cpp
-  test_match_engine.cpp)
+  test_match_engine.cpp
+  test_backtester.cpp)
 target_link_libraries(eib_tests PRIVATE eib_core Catch2::Catch2WithMain)
 
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
