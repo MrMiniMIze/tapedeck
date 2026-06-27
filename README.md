@@ -97,3 +97,4 @@ docs/            project docs: LATENCY, FILLS, RESEARCH_LOG, BENCHMARKS, DATA
 * `docs/RESEARCH_LOG.md`: the trial ledger feeding the Deflated Sharpe Ratio
 * `docs/BENCHMARKS.md`: environment-gated results
 * `docs/DATA.md`: the ITCH 5.0 venue spine, where to get it, framing, message types
+* `docs/DESIGN.md`: the load-bearing decisions, what CI proves, and where it lies
