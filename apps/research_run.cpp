@@ -26,61 +26,33 @@ using namespace eib;
 
 namespace {
 
-// Passive OFI strategy: quote at the touch on the heavier side, capped inventory,
-// marked to market. It samples equity every `sample_every` events so the driver
-// can difference the samples into a return series.
-struct PassiveOfi {
-  Qty cap = 5;
-  Qty qty = 1;
+// Aggressive microprice strategy: hold a +/-1 position in the signal direction,
+// re-evaluated every `horizon` samples, trading at the touch so the spread is a
+// real, paid cost. Marks to market each sample. Sweeping the horizon shows where
+// the edge decays and whether it survives the spread. (The passive MatchEngine
+// path is tested separately; on a deep, liquid name a size-1 passive quote
+// essentially never fills, so it is not the right probe for AAPL.)
+struct AggressiveSignal {
+  int horizon = 1;
   int sample_every = 50;
-
-  std::uint64_t next_id = (1ull << 40);  // our id space, separate from venue ids
-  OrderId resting_id = 0;
-  Side resting_side = Side::Buy;
-  Ticks resting_price = 0;
-  int counter = 0;
+  long counter = 0;
+  long sample_idx = 0;
+  Qty target = 0;
   std::int64_t last_eq = 0;
   std::vector<std::int64_t> equity;
 
   void on_event(Backtester& bt, const MarketEvent&) {
     const Bbo q = top_of_book(bt.book());
-    // Carry the last valid mark to market so a sample never lands on a
-    // momentarily one-sided book (which would spike the return series).
-    if (q.valid) last_eq = bt.equity2();
-    if (++counter % sample_every == 0) equity.push_back(last_eq);
-    if (!q.valid) return;
-
-    const int sig = microprice_direction(q);
-    const Qty pos = bt.portfolio().position;
-
-    bool want = false;
-    Side wside = Side::Buy;
-    Ticks wprice = 0;
-    if (sig > 0 && pos < cap) {
-      want = true;
-      wside = Side::Buy;
-      wprice = q.bid_px;
-    } else if (sig < 0 && pos > -cap) {
-      want = true;
-      wside = Side::Sell;
-      wprice = q.ask_px;
+    if (q.valid) {
+      bt.set_target(target);  // trade to target at the touch (pays the spread)
+      last_eq = bt.equity2();
     }
-
-    if (resting_id != 0) {
-      if (!bt.passive_live(resting_id)) {
-        resting_id = 0;  // filled or otherwise gone
-      } else if (!want || wside != resting_side || wprice != resting_price) {
-        bt.cancel_passive(resting_id);
-        resting_id = 0;
+    if (++counter % sample_every == 0) {
+      equity.push_back(last_eq);
+      if (sample_idx % horizon == 0 && q.valid) {
+        target = static_cast<Qty>(microprice_direction(q));
       }
-    }
-    if (resting_id == 0 && want) {
-      const OrderId id = next_id++;
-      if (bt.post_passive(id, wside, wprice, qty)) {
-        resting_id = id;
-        resting_side = wside;
-        resting_price = wprice;
-      }
+      ++sample_idx;
     }
   }
 };
@@ -160,14 +132,12 @@ int main(int argc, char** argv) {
     return 2;
   }
 
-  struct Run { const char* name; FillModel fm; };
-  const Run runs[] = {{"conservative", FillModel::Conservative},
-                      {"optimistic", FillModel::Optimistic}};
-
+  const int horizons[] = {1, 5, 20, 100};
   std::vector<std::vector<std::int64_t>> equities;
-  for (const auto& r : runs) {
-    Backtester bt(1u << 16, 1u << 16, r.fm);
-    PassiveOfi strat;
+  for (const int h : horizons) {
+    Backtester bt(1u << 16, 1u << 16, FillModel::Conservative);
+    AggressiveSignal strat;
+    strat.horizon = h;
     bt.run(stream, strat);
     equities.push_back(strat.equity);
   }
@@ -175,11 +145,13 @@ int main(int argc, char** argv) {
   std::size_t n = equities[0].size();
   for (const auto& e : equities) n = std::min(n, e.size());
 
-  std::printf("conservative,optimistic\n");
+  std::printf("h1,h5,h20,h100\n");
   for (std::size_t i = 1; i < n; ++i) {
-    std::printf("%lld,%lld\n",
+    std::printf("%lld,%lld,%lld,%lld\n",
                 static_cast<long long>(equities[0][i] - equities[0][i - 1]),
-                static_cast<long long>(equities[1][i] - equities[1][i - 1]));
+                static_cast<long long>(equities[1][i] - equities[1][i - 1]),
+                static_cast<long long>(equities[2][i] - equities[2][i - 1]),
+                static_cast<long long>(equities[3][i] - equities[3][i - 1]));
   }
   return 0;
 }
