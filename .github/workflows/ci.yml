@@ -33,6 +33,18 @@ jobs:
       - name: Test
         run: ctest --preset asan
 
+  zero-alloc:
+    name: zero-alloc (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake --preset dev
+      - name: Build guard
+        run: cmake --build --preset dev --target eib_zalloc_check
+      - name: Run guard
+        run: build/dev/apps/eib_zalloc_check
+
   fuzz:
     name: fuzz-itch (linux, clang)
     runs-on: ubuntu-latest

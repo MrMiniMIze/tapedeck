@@ -6,7 +6,7 @@ End-to-end C++20 market-data pipeline on one **deterministic, replayable** spine
 
 The point is not "I built an exchange." The point is a measurably correct, deterministic, honestly benchmarked pipeline, with a written account of exactly where it lies.
 
-> **Status: Phase 1 in progress.** `BookBuilder` plus the NASDAQ ITCH 5.0 `FeedParser` plus the `eib_replay` tool are done and verified (warning clean, behavior tested, CI green on Linux and Windows). Remaining in Phase 1: fuzz the parser, add the zero-allocation CI check, then the flat-array optimization (Phase 1b).
+> **Status: Phase 1 complete.** The `BookBuilder` is a flat tick-indexed array (differential-tested against a simple reference book), fed by the NASDAQ ITCH 5.0 `FeedParser`, with the `eib_replay` tool, a libFuzzer parser target, a deterministic `state_hash`, and a CI-enforced zero-allocation steady state. Phase 2 (MatchEngine and event-driven backtester) is next.
 
 ## Quick start
 
@@ -72,7 +72,7 @@ Needs **CMake 3.20 or newer** and a **C++20** compiler (GCC 11+, Clang 14+, or M
 ## Roadmap
 
 * [x] **Phase 0**: scaffold (CMake, CI on Linux and Windows, Catch2, sanitizers, platform clock and affinity, honesty docs)
-* [ ] **Phase 1**: `BookBuilder`, ITCH 5.0 `FeedParser`, `eib_replay`, and a libFuzzer parser target are done and verified; remaining work is the flat-array optimization (Phase 1b), which also brings the zero-allocation CI check
+* [x] **Phase 1**: flat-array `BookBuilder` (differential-tested vs a reference book), ITCH 5.0 `FeedParser`, `eib_replay`, a libFuzzer parser target, deterministic `state_hash`, and a CI-enforced zero-allocation steady state
 * [ ] **Phase 2**: `MatchEngine` plus event-driven backtester plus the lookahead oracle test
 * [ ] **Phase 3**: OFI/microprice signal plus the honest-evaluation machine (deflated Sharpe, kill curves)
 * [ ] **Phase 4**: honest latency on bare-metal Linux, or a throughput plus determinism reframe
