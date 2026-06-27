@@ -6,7 +6,7 @@ End-to-end C++20 market-data pipeline on one **deterministic, replayable** spine
 
 The point is not "I built an exchange." The point is a measurably correct, deterministic, honestly benchmarked pipeline, with a written account of exactly where it lies.
 
-> **Status: Phase 2 complete.** On top of the Phase 1 pipeline (ITCH 5.0 parser, flat `BookBuilder`, fuzzing, zero-allocation steady state), the `MatchEngine` models our own orders' queue position and fills, the event-driven backtester runs the book and matcher on one timestamp-ordered stream with no lookahead by construction, and the lookahead oracle test shows foresight printing money while the honest path does not. Phase 3 (the order-flow signal and the honest-evaluation machine) is next.
+> **Status: Phase 2 complete.** On top of the Phase 1 pipeline (ITCH 5.0 parser, flat `BookBuilder`, fuzzing, zero-allocation steady state), the `MatchEngine` models our own orders' queue position and fills, the event-driven backtester runs the book and matcher on one timestamp-ordered stream with no lookahead by construction, and the lookahead oracle test shows foresight printing money while the honest path does not. Phase 3 is underway: the OFI and microprice signals and the honest-evaluation machine (deflated Sharpe, bootstrap CI, null test, kill curves) are built and self-tested; the end-to-end kill curves on real ITCH data are the remaining step.
 
 ## Quick start
 
@@ -74,7 +74,7 @@ Needs **CMake 3.20 or newer** and a **C++20** compiler (GCC 11+, Clang 14+, or M
 * [x] **Phase 0**: scaffold (CMake, CI on Linux and Windows, Catch2, sanitizers, platform clock and affinity, honesty docs)
 * [x] **Phase 1**: flat-array `BookBuilder` (differential-tested vs a reference book), ITCH 5.0 `FeedParser`, `eib_replay`, a libFuzzer parser target, deterministic `state_hash`, and a CI-enforced zero-allocation steady state
 * [x] **Phase 2**: `MatchEngine` (queue-position fills, Conservative and Optimistic), the event-driven backtester (book plus matcher on one timestamp-ordered stream, no lookahead by construction), and the lookahead oracle test (foresight prints money, the honest path does not)
-* [~] **Phase 3**: OFI and microprice signals done (integer-only, `include/eib/signal.hpp`); the honest-evaluation machine (walk-forward, deflated Sharpe, null test) and the kill curves are next
+* [~] **Phase 3**: OFI and microprice signals (integer-only, `include/eib/signal.hpp`) and the honest-evaluation machine (deflated Sharpe, stationary-bootstrap CI, null/shuffle test, walk-forward, kill curves) are built and self-tested in `research/`; the remaining step is running the end-to-end kill curves on real ITCH data (needs data on a tuned host)
 * [ ] **Phase 4**: honest latency on bare-metal Linux, or a throughput plus determinism reframe
 
 ## Layout

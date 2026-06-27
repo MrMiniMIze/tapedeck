@@ -45,6 +45,18 @@ jobs:
       - name: Run guard
         run: build/dev/apps/eib_zalloc_check
 
+  research:
+    name: research (python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Self test the honest-evaluation machine
+        working-directory: research
+        run: python3 -m unittest discover -v
+
   fuzz:
     name: fuzz-itch (linux, clang)
     runs-on: ubuntu-latest
