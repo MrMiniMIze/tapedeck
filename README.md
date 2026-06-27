@@ -74,7 +74,7 @@ Needs **CMake 3.20 or newer** and a **C++20** compiler (GCC 11+, Clang 14+, or M
 * [x] **Phase 0**: scaffold (CMake, CI on Linux and Windows, Catch2, sanitizers, platform clock and affinity, honesty docs)
 * [x] **Phase 1**: flat-array `BookBuilder` (differential-tested vs a reference book), ITCH 5.0 `FeedParser`, `eib_replay`, a libFuzzer parser target, deterministic `state_hash`, and a CI-enforced zero-allocation steady state
 * [x] **Phase 2**: `MatchEngine` (queue-position fills, Conservative and Optimistic), the event-driven backtester (book plus matcher on one timestamp-ordered stream, no lookahead by construction), and the lookahead oracle test (foresight prints money, the honest path does not)
-* [ ] **Phase 3**: OFI/microprice signal plus the honest-evaluation machine (deflated Sharpe, kill curves)
+* [~] **Phase 3**: OFI and microprice signals done (integer-only, `include/eib/signal.hpp`); the honest-evaluation machine (walk-forward, deflated Sharpe, null test) and the kill curves are next
 * [ ] **Phase 4**: honest latency on bare-metal Linux, or a throughput plus determinism reframe
 
 ## Layout
