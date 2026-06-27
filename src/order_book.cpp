@@ -11,9 +11,12 @@ OrderBook::OrderBook(std::size_t level_capacity, std::size_t order_capacity)
       orders_(order_capacity) {}
 
 bool OrderBook::in_window(Ticks price, std::size_t& idx) const {
-  if (!based_) return false;
-  const Ticks off = price - base_;
-  if (off < 0 || static_cast<std::size_t>(off) >= cap_) return false;
+  if (!based_ || price < base_) return false;
+  // Unsigned distance avoids signed-overflow UB for extreme prices: the value
+  // wraps modulo 2^64, which equals price - base_ whenever that is in range.
+  const std::uint64_t off =
+      static_cast<std::uint64_t>(price) - static_cast<std::uint64_t>(base_);
+  if (off >= cap_) return false;
   idx = static_cast<std::size_t>(off);
   return true;
 }

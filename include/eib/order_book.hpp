@@ -137,7 +137,8 @@ class OrderBook {
   bool in_window(Ticks price, std::size_t& idx) const;
   // For prices already known to be in the window (a resting order's own price).
   std::size_t index_of(Ticks price) const {
-    return static_cast<std::size_t>(price - base_);
+    return static_cast<std::size_t>(static_cast<std::uint64_t>(price) -
+                                    static_cast<std::uint64_t>(base_));
   }
   void add_level_qty(Side side, std::size_t idx, Qty qty);
   void remove_level_qty(Side side, std::size_t idx, Qty amount);

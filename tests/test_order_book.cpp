@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <limits>
+
 #include "eib/order_book.hpp"
 
 using namespace eib;
@@ -81,6 +83,33 @@ TEST_CASE("replace moves an order to a new id/price/size, inheriting side",
   REQUIRE(b.qty_at(Side::Buy, 100) == 0);
   REQUIRE(b.order_count() == 1);
   REQUIRE_FALSE(b.apply(MarketEvent::replace(999, 3, 100, 5)));  // unknown original
+}
+
+TEST_CASE("out-of-window prices are rejected without corrupting the book",
+          "[book][window]") {
+  const std::size_t cap = 256;
+  OrderBook b(cap, 256);
+  // The first add fixes base = 1000 - cap/2 = 872; the window is [872, 1128).
+  REQUIRE(b.apply(MarketEvent::add(1, Side::Buy, 1000, 5)));
+  const Ticks base = 1000 - static_cast<Ticks>(cap / 2);
+
+  // Both window edges must be accepted.
+  REQUIRE(b.apply(MarketEvent::add(2, Side::Buy, base, 1)));                       // 872
+  REQUIRE(b.apply(MarketEvent::add(3, Side::Sell, base + static_cast<Ticks>(cap) - 1, 1)));  // 1127
+
+  const std::uint64_t snapshot = b.state_hash();
+  // Just outside each edge must be rejected and must NOT change the book.
+  REQUIRE_FALSE(b.apply(MarketEvent::add(4, Side::Buy, base - 1, 1)));             // 871
+  REQUIRE_FALSE(b.apply(MarketEvent::add(5, Side::Buy, base + static_cast<Ticks>(cap), 1)));  // 1128
+  // An extreme price must reject cleanly, with no signed-overflow UB.
+  REQUIRE_FALSE(b.apply(MarketEvent::add(6, Side::Buy, std::numeric_limits<Ticks>::max(), 1)));
+  REQUIRE(b.state_hash() == snapshot);
+  REQUIRE(b.order_count() == 3);
+
+  // Replace to an out-of-window price is rejected; the original order survives.
+  REQUIRE_FALSE(b.apply(MarketEvent::replace(1, 7, base - 1, 9)));
+  REQUIRE(b.qty_at(Side::Buy, 1000) == 5);
+  REQUIRE(b.order_count() == 3);
 }
 
 TEST_CASE("determinism: same events produce an identical state hash",
