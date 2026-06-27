@@ -5,9 +5,28 @@
 > is a *trial* and must be counted in the Deflated Sharpe Ratio. `N = 1` is a lie
 > if you tuned anything; exploration during development *is* multiple testing.
 
-| # | Date | What changed (signal / threshold / horizon / feature) | In-sample | Out-of-sample | Kept? |
-|---|------|-------------------------------------------------------|-----------|---------------|-------|
-| 1 |      |                                                       |           |               |       |
+| # | Date | What changed (signal / threshold / horizon / feature) | Sharpe (net of spread) | Kept? |
+|---|------|-------------------------------------------------------|------------------------|-------|
+| 1 | 2026-06-27 | Aggressive microprice, AAPL, hold 1 sample | -0.4597 | no |
+| 2 | 2026-06-27 | Aggressive microprice, AAPL, hold 5 samples | -0.1191 | no |
+| 3 | 2026-06-27 | Aggressive microprice, AAPL, hold 20 samples | -0.0537 | no |
+| 4 | 2026-06-27 | Aggressive microprice, AAPL, hold 100 samples | 0.0000 | no |
+
+## First real run (the null)
+
+Data: NASDAQ TotalView-ITCH 5.0, 2019-12-30, first ~1.5 GB slice, symbol AAPL
+(335,809 events). Strategy: take a +/-1 position in the microprice direction,
+re-evaluated each holding horizon, filled aggressively at the touch so the spread
+is a paid cost. Result: the kill curve over holding horizon is negative and worst
+at the shortest horizon (most spread paid), decaying toward zero as turnover
+falls. The best horizon (100) has a deflated-Sharpe probability of ~0.00, a
+bootstrap 95% CI of [-0.029, +0.028] straddling zero, and a null p-value of 0.51.
+
+**Conclusion: no edge net of the spread.** This is the honest null. The microprice
+predicts the next move, but not by enough to cross the spread. Caveats: one symbol,
+one day, one slice, an aggressive-take strategy, and only four horizon trials. A
+genuine study would add symbols, days, and the passive (queue-position) variant,
+and report the deflated Sharpe over the full committed trial count.
 
 ## Deflated Sharpe inputs (fill at Phase 3)
 
