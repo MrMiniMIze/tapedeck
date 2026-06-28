@@ -6,7 +6,7 @@ End-to-end C++20 market-data pipeline on one **deterministic, replayable** spine
 
 The point is not "I built an exchange." The point is a measurably correct, deterministic, honestly benchmarked pipeline, with a written account of exactly where it lies.
 
-> **Status: Phase 2 complete.** On top of the Phase 1 pipeline (ITCH 5.0 parser, flat `BookBuilder`, fuzzing, zero-allocation steady state), the `MatchEngine` models our own orders' queue position and fills, the event-driven backtester runs the book and matcher on one timestamp-ordered stream with no lookahead by construction, and the lookahead oracle test shows foresight printing money while the honest path does not. Phase 3 is underway: the OFI and microprice signals and the honest-evaluation machine (deflated Sharpe, bootstrap CI, null test, kill curves) are built and self-tested; the end-to-end kill curves on real ITCH data are the remaining step.
+> **Status: Phases 0 to 3 complete and CI-green.** The full pipeline (ITCH 5.0 parser, flat `BookBuilder`, `MatchEngine` with queue-position fills, event-driven backtester with a lookahead oracle, OFI/microprice signal, and the deflated-Sharpe evaluation machine) has been run end to end on real NASDAQ data. The honest finding: the microprice signal does not survive the spread (see **Results** below). Remaining: Phase 4 (honest latency on bare metal), which is optional.
 
 ## Quick start
 
@@ -70,25 +70,41 @@ Needs **CMake 3.20 or newer** and a **C++20** compiler (GCC 11+, Clang 14+, or M
 * **No lookahead by construction.** The backtester replays the same normalized event stream the live path would, in timestamp order. Proven by a lookahead oracle test (Phase 2).
 * **Latency is measured honestly or not claimed at all.** See `docs/LATENCY.md`.
 
+## Results: the honest null on real data
+
+Run end to end on real **NASDAQ TotalView-ITCH 5.0** (2019-12-30 slice). The strategy takes a +/-1 position in the microprice direction, filled aggressively at the touch so the spread is a paid cost, swept over holding horizon. The kill curve is Sharpe (per period, net of the spread) versus horizon:
+
+| Holding horizon | AAPL Sharpe | MSFT Sharpe |
+|-----------------|-------------|-------------|
+| 1               | -0.46       | -0.18       |
+| 5               | -0.12       | -0.03       |
+| 20              | -0.05       | -0.01       |
+| 100             |  0.00       |  0.00       |
+
+The signal does not survive the spread. The loss is largest at the shortest horizon (where you cross the spread most) and decays toward zero as turnover falls. On both names the best horizon has a deflated-Sharpe probability near zero, a bootstrap 95% Sharpe CI straddling zero, and a null-shuffle p-value near 0.5. The same null holds on MSFT with no retuning, so it is not an AAPL artifact.
+
+That is the point of the project: a rigorous pipeline that finds the null and reports it, rather than a fitted Sharpe that would not survive scrutiny. Full trial ledger in `docs/RESEARCH_LOG.md`. Reproduce with `scripts/research <itch-file> AAPL`.
+
 ## Roadmap
 
 * [x] **Phase 0**: scaffold (CMake, CI on Linux and Windows, Catch2, sanitizers, platform clock and affinity, honesty docs)
 * [x] **Phase 1**: flat-array `BookBuilder` (differential-tested vs a reference book), ITCH 5.0 `FeedParser`, `eib_replay`, a libFuzzer parser target, deterministic `state_hash`, and a CI-enforced zero-allocation steady state
 * [x] **Phase 2**: `MatchEngine` (queue-position fills, Conservative and Optimistic), the event-driven backtester (book plus matcher on one timestamp-ordered stream, no lookahead by construction), and the lookahead oracle test (foresight prints money, the honest path does not)
-* [~] **Phase 3**: OFI and microprice signals (integer-only), the honest-evaluation machine (deflated Sharpe, bootstrap CI, null test, kill curves, self-tested in `research/`), and the end-to-end driver (`eib_research` plus `scripts/research`: signal per fill model, returns CSV, kill curve report) are all built and verified on synthetic data; the only remaining step is one command on a real ITCH sample
+* [x] **Phase 3**: OFI and microprice signals (integer-only), the honest-evaluation machine (deflated Sharpe, bootstrap CI, null test, kill curves), and the end-to-end driver (`eib_research` plus `scripts/research`), run on real NASDAQ data: the microprice edge does not survive the spread on AAPL or MSFT (see Results)
 * [ ] **Phase 4**: honest latency on bare-metal Linux, or a throughput plus determinism reframe
 
 ## Layout
 
 ```
-include/eib/     headers: types, event, order_book, itch_parser, clock, affinity
-src/             core static lib: order_book.cpp, itch_parser.cpp
-apps/            eib_replay: run the pipeline on a real ITCH file
-tests/           Catch2 tests (auto-fetched): smoke, order_book, itch_parser
+include/eib/     headers: types, event, order_book, match_engine, backtester, signal, itch_parser, reference_book, hash, clock, affinity
+src/             core static lib: order_book.cpp, itch_parser.cpp, match_engine.cpp
+apps/            eib_replay (replay a real ITCH file), eib_research (kill curves), eib_zalloc_check
+tests/           Catch2 tests (auto-fetched): order book, ITCH parser, match engine, backtester, signal, differential
 fuzz/            libFuzzer harness for the ITCH parser (build with EIB_FUZZ=ON)
-scripts/         setup / build / test / replay / selfcheck / bench / clean  (.sh + .ps1)
-docs/            project docs: LATENCY, FILLS, RESEARCH_LOG, BENCHMARKS, DATA
-.github/         CI: build and test on Linux and Windows, plus ASan/UBSan and fuzz jobs
+research/        honest-evaluation machine in Python (deflated Sharpe, bootstrap, null test) plus killcurve.py
+scripts/         setup / build / test / replay / fuzz / research / selfcheck / bench / clean  (.sh + .ps1)
+docs/            project docs: LATENCY, FILLS, RESEARCH_LOG, BENCHMARKS, DATA, DESIGN
+.github/         CI on Linux and Windows: build+test, ASan/UBSan, zero-alloc, fuzz, research
 ```
 
 ## Honesty docs
